@@ -14,7 +14,7 @@ Pure logic, fully covered by tests.
 
 | ID | Area | Item | Depends on |
 |---|---|---|---|
-| R1 | core | **Song model.** `Song` with notes (pitch, start, duration, velocity, track, channel) and times in seconds with tempo changes applied; `PianistaException` base type; `IClock` with `Fake`. First real tests; remove `--ignore-exit-code 8` from the test project. | — |
+| R1 | core | **Song model.** `Song` with notes (pitch, start, duration, velocity, track, channel) in absolute time (`TimeSpan`); `ISongFile` interface, `PianistaException` and `InvalidSongFileException`. First real tests; remove `--ignore-exit-code 8` from the test project. | — |
 | R2 | midi | **Reading `.mid` files.** DryWetMidi implementation of `ISongFile` that produces a `Song`; DryWetMidi errors become `InvalidSongFileException`. Test files are built in code. | R1 |
 
 ## M2 — Hear the keyboard
@@ -37,7 +37,7 @@ A song plays through the instrument while notes are shown.
 |---|---|---|---|
 | R8 | core | **Track assignment.** Mark tracks as right hand, left hand or accompaniment; defaults from track names, channel 10 as drums, pitch split for single-track files. | R2 |
 | R9 | desktop | **Open a song.** File dialog, `LoadSong` command, track assignment screen. | R4, R8 |
-| R10 | core, midi, hardware | **Playback scheduler.** Sends the song to MIDI Out driven by `IClock`; tracks can be muted. | R3, R8 |
+| R10 | core, midi, hardware | **Playback scheduler.** `IClock` with `Fake`; sends the song to MIDI Out driven by `IClock`; tracks can be muted. | R3, R8 |
 | R11 | desktop, hardware | **Falling notes.** Custom-drawn view synced to playback at a steady 60 fps. | R6, R9, R10 |
 | R12 | desktop | **Transport controls.** Play, pause, seek, tempo 25–100 %. | R11 |
 
