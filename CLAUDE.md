@@ -7,14 +7,50 @@ a MIDI keyboard: falling notes, wait mode, accompaniment played through the user
 own instrument. The vision, scope and decisions are in [docs/CONCEPT.md](docs/CONCEPT.md) —
 read it before proposing features or architecture changes.
 
-**Current state:** solution skeleton only — an empty Avalonia window wired to the
-Generic Host; no features yet.
+The ordered plan is in [docs/ROADMAP.md](docs/ROADMAP.md); progress is tracked by
+GitHub issues and pull requests (repository `Georgiy-smr/Pianista`).
 
 ## Communication
 
 - Talk to the maintainer in **Russian**.
 - Everything in the repository is in **English**: code, docs, commit messages, issues.
 - User-facing UI strings live in localization resources, never hard-coded.
+
+## Workflow
+
+Work happens in two kinds of sessions.
+
+### Planning session — "what are we doing today?"
+
+The maintainer opens a session and asks what to do next. Then:
+
+1. Pull `main` and read [docs/ROADMAP.md](docs/ROADMAP.md).
+2. Check progress: `gh issue list --state all --limit 100` and `gh pr list --state all --limit 20`.
+   An item is done when its `R<n>:` issue is closed.
+3. Report briefly: what is done, what is in progress (open issues / open PRs, which the
+   maintainer may need to review or merge first), and the next item — the first one in
+   roadmap order whose dependencies are all done.
+4. Draft the issue with the maintainer, following `.github/ISSUE_TEMPLATE/task.md`.
+   The issue must be self-contained: a fresh session with only this repository and the
+   issue must be able to do the task. Name concrete types, folders and test expectations.
+   Set the labels from the roadmap's Area column (plus `hardware` where listed) and the
+   milestone (`M1 — Foundation`, …).
+5. Publish it with `gh issue create` only after the maintainer approves the text.
+
+If the plan needs to change (items split, reordered, added), propose an edit to
+`docs/ROADMAP.md` in the same session.
+
+### Task session — "solve issue #N"
+
+1. Read the issue and everything it links to. If something is unclear or contradicts
+   CLAUDE.md, ask in the session before writing code.
+2. Branch from an up-to-date `main`: `<issue number>-<short-kebab-name>` (`12-playback-scheduler`).
+3. Do exactly what the issue scopes — nothing from "Out of scope", no drive-by refactors.
+   Spotted something else worth doing? Mention it in the PR description instead.
+4. Before opening the PR: `dotnet build` with zero warnings and `dotnet test` passing.
+5. Open a PR with `gh pr create`: title in Conventional Commits form, body with a summary,
+   `Closes #N`, and the issue's hardware check as a checklist for the maintainer.
+6. Never merge the PR — the maintainer reviews and merges.
 
 ## Architecture
 
