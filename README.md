@@ -47,16 +47,16 @@ git clone https://github.com/<owner>/Pianista.git
 cd Pianista
 dotnet build
 dotnet test
+dotnet run --project src/Pianista.Desktop
 ```
-
-> The solution does not exist yet — these commands will work once the first projects are added.
 
 ## Tech stack
 
 - .NET 10, C#
-- [Avalonia](https://avaloniaui.net/) for the UI
+- [Avalonia](https://avaloniaui.net/) and [ReactiveUI](https://www.reactiveui.net/) for the UI
 - [DryWetMidi](https://github.com/melanchall/drywetmidi) for MIDI devices and files
-- xUnit for tests
+- [Mediator](https://github.com/martinothamar/Mediator) and [Scrutor](https://github.com/khellang/Scrutor) for application structure
+- xUnit v3 for tests
 
 ## Contributing
 

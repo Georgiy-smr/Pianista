@@ -7,7 +7,8 @@ a MIDI keyboard: falling notes, wait mode, accompaniment played through the user
 own instrument. The vision, scope and decisions are in [docs/CONCEPT.md](docs/CONCEPT.md) —
 read it before proposing features or architecture changes.
 
-**Current state:** documentation only; no solution or code yet.
+**Current state:** solution skeleton only — an empty Avalonia window wired to the
+Generic Host; no features yet.
 
 ## Communication
 
@@ -23,21 +24,27 @@ The solution file is `Pianista.slnx` (the XML `.slnx` format, not a classic `.sl
 ```
 Pianista/
 ├── Pianista.slnx
+├── global.json                ← pinned .NET SDK, Microsoft.Testing.Platform test runner
+├── Directory.Build.props      ← shared build settings (net10.0, Nullable, warnings as errors)
+├── Directory.Packages.props   ← all NuGet versions (Central Package Management)
+├── .github/workflows/         ← CI, see docs/CI.md
 ├── src/
-│   ├── Pianista.Core/      ← song model, MIDI-file parsing, lesson logic, note evaluation,
-│   │                          feature commands + handlers, interfaces for external interaction
-│   ├── Pianista.Midi/      ← MIDI device implementations of Core interfaces (DryWetMidi)
-│   └── Pianista.Desktop/   ← Avalonia app: views, view models, rendering, DI composition
+│   ├── Pianista.Core/         ← song model, lesson logic, note evaluation, feature commands
+│   │                             + handlers, domain exceptions, interfaces for external interaction
+│   ├── Pianista.Midi/         ← DryWetMidi implementations: MIDI devices and reading .mid files
+│   └── Pianista.Desktop/      ← Avalonia + ReactiveUI: views, view models, rendering,
+│                                 DI composition, error presentation, localization
 └── tests/
-    └── Pianista.Tests/     ← xUnit tests
+    └── Pianista.Tests/        ← xUnit v3 tests for Core and Midi
 ```
 
 Rules:
 
-- `Pianista.Core` must not reference Avalonia, DryWetMidi device APIs, or anything
-  platform-specific.
-- Interfaces for external interaction (MIDI input/output, clock, file system, settings)
+- `Pianista.Core` must not reference Avalonia, DryWetMidi, or anything platform-specific.
+- Interfaces for external interaction (MIDI input/output, song files, clock, settings)
   are declared in `Core`; real implementations live in `Midi` or `Desktop`.
+- Every package version goes into `Directory.Packages.props`; `PackageReference` items
+  never carry a `Version`.
 - Game logic never reads time directly (`DateTime.Now`, `Stopwatch`) — time comes from
   an injected clock interface.
 - Playback, timing and note evaluation run locally in-process; latency is the top priority.
@@ -107,46 +114,52 @@ public interface IMidiOutput
 }
 ```
 
+## Code organization: by topic
+
+Inside each project, folders are organized by topic, not by technical layer. A topic
+folder holds everything that belongs to it: models, commands and handlers, interfaces
+with their `Fake`s, exceptions, route stages.
+
+```
+Pianista.Core/
+├── Songs/        ← Song model, ISongFile, LoadSong + handler, InvalidSongFileException
+├── Lessons/      ← practice modes, hand selection, tempo, A–B loop
+├── Evaluation/   ← judging played notes against expected ones
+├── Playback/     ← scheduling the accompaniment
+├── Devices/      ← IMidiInput, IMidiOutput, device selection
+├── Time/         ← IClock
+└── Routes/       ← IRoute<T>
+```
+
+`Pianista.Midi`, `Pianista.Desktop` and `Pianista.Tests` mirror the Core topics where it
+makes sense (`Pianista.Midi/Songs/DryWetSongFile.cs`, `Pianista.Tests/Songs/...`).
+The tree above is the intended shape; create a folder when its first type appears.
+
 ## Feature pattern: Mediator
 
 Every feature is implemented as a "Command + Handler" pair via
 [Mediator](https://github.com/martinothamar/Mediator) (source-generated, MIT).
 Do not use MediatR — its current versions are commercially licensed.
 
-- a `record` inheriting from a base command type (`BaseCommandWithStatus`) describes
-  the feature's input data;
+- a `sealed record` implementing `IRequest<TResult>` describes the feature's input data;
 - a `sealed class` implementing `IRequestHandler<TCommand, TResult>` contains the
-  handling logic.
+  handling logic and returns the result directly.
 
 Illustrative example (these types do not exist yet):
 
 ```csharp
-public record LoadSong(string FilePath) : BaseCommandWithStatus;
+public sealed record LoadSong(string FilePath) : IRequest<Song>;
 
 public sealed class ParseAndOpenSong(
     ISongFile file,
     IRoute<Song> route,
-    ILogger<ParseAndOpenSong> logger) : IRequestHandler<LoadSong, IStatusGeneric>
+    ILogger<ParseAndOpenSong> logger) : IRequestHandler<LoadSong, Song>
 {
-    public async ValueTask<IStatusGeneric> Handle(LoadSong request, CancellationToken cancellationToken)
+    public async ValueTask<Song> Handle(LoadSong request, CancellationToken cancellationToken)
     {
-        StatusGenericHandler handler = new StatusGenericHandler(request.ToString());
-        try
-        {
-            Song song = route.Passed(await file.Parsed(request.FilePath, cancellationToken));
-            logger.LogInformation("Song loaded: {song}", song);
-        }
-        catch (InvalidSongFileException e)
-        {
-            logger.LogWarning(e.Message);
-            handler.AddError(Strings.SongInvalidFile);
-        }
-        catch (Exception e)
-        {
-            logger.LogCritical(e.Message);
-            throw;
-        }
-        return handler;
+        Song song = route.Passed(await file.Parsed(request.FilePath, cancellationToken));
+        logger.LogInformation("Song loaded: {Song}", song);
+        return song;
     }
 }
 ```
@@ -157,14 +170,34 @@ its own work on the result, so the registration order in DI is the order in whic
 stages run. For example, the song route can get separate stages for track-to-hand
 assignment, tempo scaling or making the song current, without modifying the handler.
 
-When writing new features, follow this pattern: command + handler, error handling via
-`IStatusGeneric`/`StatusGenericHandler`, logging via `ILogger`, and generic interfaces
-wherever decorable behavior is needed.
-
 **The hot path bypasses Mediator.** Commands are for user intent: load a song, change
 the practice mode, change the tempo, select a device. The real-time path — MIDI note
 received → note evaluated → key highlighted, and scheduled playback — calls its
 services directly, without commands or handlers, and avoids allocations per note.
+
+## Error handling
+
+Expected failures are reported with exceptions and presented to the user in `Desktop`.
+
+- Every domain exception derives from the abstract `PianistaException` in `Core`.
+  One type per failure the user can act on (`InvalidSongFileException`,
+  `MidiDeviceUnavailableException`); it carries the relevant data as properties and an
+  English message for logs.
+- `Midi` implementations translate DryWetMidi exceptions into domain exceptions, so
+  nothing above them depends on third-party exception types.
+- Handlers do not catch domain exceptions — they let them propagate.
+- `Desktop` handles them in one place: view-model commands are `ReactiveCommand`s, and
+  their `ThrownExceptions` are routed to a single error presenter. It looks up the
+  localized message in `Strings.resx` under a key equal to the exception type name
+  (`InvalidSongFileException`). Any other exception is logged as critical and shown
+  with a generic message.
+- Exceptions are never used for normal game flow: a wrong note is a judgement result,
+  not an exception.
+
+## Localization
+
+User-facing strings live in `Pianista.Desktop` resources (`Strings.resx`, plus
+`Strings.<culture>.resx` per language). `Core` and `Midi` contain no user-facing text.
 
 ## Commands
 
@@ -174,11 +207,20 @@ dotnet test
 dotnet run --project src/Pianista.Desktop
 ```
 
+Tests run on Microsoft.Testing.Platform (configured in `global.json`); xUnit v3 test
+projects are executables.
+
+## CI
+
+GitHub Actions builds and tests every push and pull request to `main` on Windows —
+see [docs/CI.md](docs/CI.md). Warnings are errors, so a change is done only when
+`dotnet build` reports zero warnings and `dotnet test` passes.
+
 ## Git and dependencies
 
 - Commit messages: Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
-- Base stack: Avalonia, Melanchall.DryWetMidi, Mediator (martinothamar), Scrutor,
-  GenericServices.StatusGeneric, Microsoft.Extensions.* (DI, Hosting, Logging), xUnit.
+- Base stack: Avalonia, ReactiveUI.Avalonia, Melanchall.DryWetMidi, Mediator (martinothamar),
+  Scrutor, Microsoft.Extensions.* (DI, Hosting, Logging), xUnit v3.
   Ask before adding any other NuGet dependency.
 
 ## Hardware

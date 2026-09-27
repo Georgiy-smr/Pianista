@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Pianista.Core/Pianista.Core.csproj" />
+    <Project Path="src/Pianista.Midi/Pianista.Midi.csproj" />
+    <Project Path="src/Pianista.Desktop/Pianista.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pianista.Tests/Pianista.Tests.csproj" />
+  </Folder>
+</Solution>

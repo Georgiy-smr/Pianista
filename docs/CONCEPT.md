@@ -76,12 +76,13 @@ There is room for a modern, free, beginner-friendly trainer built on .NET.
 ## 9. Architecture
 
 ```
-Pianista.Core      Song model, MIDI-file parsing, lesson logic, note evaluation.
-                   No UI and no device access — fully unit-testable.
-Pianista.Midi      MIDI device input/output: DryWetMidi implementations of the
-                   IMidiInput / IMidiOutput interfaces declared in Core.
-Pianista.Desktop   Avalonia application: views, view models, rendering.
-Pianista.Tests     Unit tests for Core (and Midi via fakes).
+Pianista.Core      Song model, lesson logic, note evaluation, feature commands.
+                   No UI and no third-party MIDI dependency — fully unit-testable.
+Pianista.Midi      DryWetMidi implementations of the Core interfaces:
+                   MIDI device input/output and reading .mid files.
+Pianista.Desktop   Avalonia application: views, view models, rendering,
+                   error presentation, localization.
+Pianista.Tests     Unit tests for Core and Midi.
 ```
 
 Key rules:
@@ -90,6 +91,8 @@ Key rules:
   so evaluation logic can be tested deterministically without a keyboard.
 - `Desktop` talks to devices only through the interfaces declared in `Core`, so a fake keyboard
   can be plugged in for development and tests.
+- `Core` reports expected failures by throwing domain exceptions; `Desktop` catches them
+  in one place and shows a localized message.
 - Porting to macOS/Linux should only require verifying the `Midi` layer and packaging.
 
 ## 10. Technology
@@ -97,10 +100,11 @@ Key rules:
 | Area | Choice |
 |---|---|
 | Runtime | .NET 10 (LTS), C# |
-| UI | Avalonia (MVVM) |
+| UI | Avalonia, ReactiveUI (MVVM) |
 | MIDI devices and files | Melanchall.DryWetMidi |
-| Application structure | Microsoft.Extensions DI/Hosting/Logging, Mediator — source-generated, MIT (command + handler), Scrutor (decorators), StatusGeneric |
-| Tests | xUnit |
+| Application structure | Microsoft.Extensions DI/Hosting/Logging, Mediator — source-generated, MIT (command + handler), Scrutor (decorators) |
+| Tests | xUnit v3 on Microsoft.Testing.Platform |
+| CI | GitHub Actions: build and test on Windows (see [CI.md](CI.md)) |
 | Target platform | Windows first; macOS and Linux later |
 | License | MIT |
 | Repository language | English (code, docs, commits, issues) |
@@ -115,6 +119,9 @@ Key rules:
   channel 10, tempo changes. Needs sensible defaults and manual override.
 - **Muting the player's part** — in wait/play-along mode the notes the player must
   play are not sent to the keyboard; only the accompaniment is.
+- **Linux MIDI devices** — DryWetMidi's device API covers Windows and macOS; Linux needs
+  a separate `IMidiInput`/`IMidiOutput` implementation (e.g. ALSA). Reading `.mid` files
+  works everywhere.
 - **Keyboard quirks** — test with the CT-X700 first; collect reports for other models.
 - **Song content** — the repo ships only public-domain / self-made MIDI files;
   users bring their own.
