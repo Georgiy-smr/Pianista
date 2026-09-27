@@ -1,5 +1,7 @@
 # Pianista
 
+[![Build](https://github.com/Georgiy-smr/Pianista/actions/workflows/build.yml/badge.svg)](https://github.com/Georgiy-smr/Pianista/actions/workflows/build.yml)
+
 **A free, open-source app that teaches you to play a MIDI keyboard.**
 
 Notes scroll toward an on-screen keyboard, the accompaniment plays through your own
@@ -43,7 +45,7 @@ UI localization, macOS and Linux builds. See the [roadmap](docs/CONCEPT.md#7-roa
 Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
 ```bash
-git clone https://github.com/<owner>/Pianista.git
+git clone https://github.com/Georgiy-smr/Pianista.git
 cd Pianista
 dotnet build
 dotnet test
