@@ -9,4 +9,7 @@ public sealed record Note(
     Duration Duration,
     Velocity Velocity,
     [property: Range(0, int.MaxValue)] int Track,
-    Channel Channel) : Validated;
+    Channel Channel) : Validated
+{
+    public TimeSpan End => TimeSpan.Zero;
+}

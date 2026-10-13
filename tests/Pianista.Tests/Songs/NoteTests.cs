@@ -16,4 +16,18 @@ public sealed class NoteTests
             -1,
             new Channel(0)));
     }
+
+    [Fact]
+    public void EndsAfterItsDurationFromStart()
+    {
+        Note note = new(
+            new Pitch(60),
+            new Start(TimeSpan.FromSeconds(1)),
+            new Duration(TimeSpan.FromSeconds(0.5)),
+            new Velocity(100),
+            0,
+            new Channel(0));
+
+        Assert.Equal(TimeSpan.FromSeconds(1.5), note.End);
+    }
 }
