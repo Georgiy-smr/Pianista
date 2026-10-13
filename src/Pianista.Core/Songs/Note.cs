@@ -11,5 +11,5 @@ public sealed record Note(
     [property: Range(0, int.MaxValue)] int Track,
     Channel Channel) : Validated
 {
-    public TimeSpan End => TimeSpan.Zero;
+    public TimeSpan End => Start.Offset + Duration.Length;
 }
