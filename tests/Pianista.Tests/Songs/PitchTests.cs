@@ -12,4 +12,12 @@ public sealed class PitchTests
     {
         Assert.Throws<ValidationException>(() => new Pitch(number));
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(127)]
+    public void AcceptsNumberAtMidiRangeBounds(int number)
+    {
+        Assert.Null(Record.Exception(() => new Pitch(number)));
+    }
 }
