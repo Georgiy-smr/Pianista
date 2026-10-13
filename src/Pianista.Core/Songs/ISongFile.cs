@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Pianista.Core.Songs;
 
 public interface ISongFile
@@ -8,7 +10,8 @@ public interface ISongFile
     {
         public ValueTask<Song> Parsed(string path, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            Trace.WriteLine($"{nameof(Fake)}.{nameof(Parsed)} called with {path}");
+            return ValueTask.FromResult(new Song([], []));
         }
     }
 }
