@@ -11,5 +11,5 @@ public sealed class Song(IEnumerable<Track> tracks, IEnumerable<Note> notes)
             .ThenBy(note => note.Pitch.Number)
     ];
 
-    public TimeSpan Length => TimeSpan.Zero;
+    public TimeSpan Length => Notes.Max(note => note.End);
 }
