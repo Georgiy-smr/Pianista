@@ -32,4 +32,10 @@ public sealed class SongTests
 
         Assert.Equal(TimeSpan.FromSeconds(4), new Song([], [held, brief]).Length);
     }
+
+    [Fact]
+    public void HasZeroLengthWithoutNotes()
+    {
+        Assert.Equal(TimeSpan.Zero, new Song([], []).Length);
+    }
 }
