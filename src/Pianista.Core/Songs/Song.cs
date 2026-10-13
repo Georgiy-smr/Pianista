@@ -10,4 +10,6 @@ public sealed class Song(IEnumerable<Track> tracks, IEnumerable<Note> notes)
             .OrderBy(note => note.Start.Offset)
             .ThenBy(note => note.Pitch.Number)
     ];
+
+    public TimeSpan Length => TimeSpan.Zero;
 }

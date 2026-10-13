@@ -23,4 +23,13 @@ public sealed class SongTests
 
         Assert.Equal([root, third, fifth], new Song([], [fifth, third, root]).Notes);
     }
+
+    [Fact]
+    public void LastsUntilTheLatestNoteEnd()
+    {
+        Note held = new SampleNote(StartSeconds: 0, DurationSeconds: 4).Note;
+        Note brief = new SampleNote(StartSeconds: 1, DurationSeconds: 1).Note;
+
+        Assert.Equal(TimeSpan.FromSeconds(4), new Song([], [held, brief]).Length);
+    }
 }
