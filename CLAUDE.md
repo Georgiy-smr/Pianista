@@ -47,10 +47,12 @@ If the plan needs to change (items split, reordered, added), propose an edit to
 2. Branch from an up-to-date `main`: `<issue number>-<short-kebab-name>` (`12-playback-scheduler`).
 3. Do exactly what the issue scopes — nothing from "Out of scope", no drive-by refactors.
    Spotted something else worth doing? Mention it in the PR description instead.
-4. Before opening the PR: `dotnet build` with zero warnings and `dotnet test` passing.
-5. Open a PR with `gh pr create`: title in Conventional Commits form, body with a summary,
-   `Closes #N`, and the issue's hardware check as a checklist for the maintainer.
-6. Never merge the PR — the maintainer reviews and merges.
+4. Develop test-first, following [Test-driven development](#test-driven-development).
+5. Before opening the PR: `dotnet build` with zero warnings and `dotnet test` passing.
+6. Open a PR with `gh pr create`: title in Conventional Commits form, body with a summary,
+   `Closes #N`, the table of TDD cycles, and the issue's hardware check as a checklist
+   for the maintainer.
+7. Never merge the PR — the maintainer reviews and merges.
 
 ## Architecture
 
@@ -125,6 +127,32 @@ performs all the checks and reports a single, well-described failure.
 
 Logic in `Core` comes with unit tests. Timing logic is tested with the fake clock and
 fake MIDI input, never with real devices.
+
+### Test-driven development
+
+Code in `Core` and `Midi` is written test-first, in Red → Green → Refactor cycles.
+Production code is written only to make a failing test pass.
+
+- **Red** — write one test for behavior that does not exist yet, plus the minimal stub
+  that lets it compile (the type exists, the behavior does not). Run it and see it fail
+  for the expected reason, not because of a compile error. Commit: `test: <behavior>`.
+- **Green** — the minimal code that makes the test pass, nothing for the future.
+  Commit: `feat: <behavior>` (or `fix:` when the cycle fixes a bug).
+- **Refactor** — improve names and remove duplication while all tests stay green.
+  Commit: `refactor: <what>`. Skip the step when there is nothing to improve.
+
+The issue lists the cycles in order; their order drives the design. A test that passes
+immediately because an earlier cycle already produced the behavior is kept and noted in
+the PR. Intermediate Red commits may fail CI; the last commit of the PR must be green.
+If the cycles lead to a better design than the issue describes, take it and explain the
+difference in the PR.
+
+The PR description contains a table of cycles: number, test, links to the Red, Green
+and Refactor commits, and one line on what was refactored, what was discovered, or why
+the test was green at once.
+
+`Desktop` views, rendering and the composition root are not developed test-first, so
+keep logic out of them and put it in `Core`.
 
 ## Fake implementations inside interfaces
 
