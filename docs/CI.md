@@ -33,8 +33,3 @@ question: *does the project still build and do all tests pass?*
 dotnet build --configuration Release
 dotnet test --configuration Release
 ```
-
-## Temporary setting
-
-`tests/Pianista.Tests/Pianista.Tests.csproj` passes `--ignore-exit-code 8` so that a test
-run with zero tests does not fail. Remove it once the first test is added.
